@@ -83,7 +83,7 @@ public class ChessPiece {
     }
 
     private boolean isPositionValid(int row, int col) {
-        return row >= 0 && row < 8 && col >= 0 && col < 8;
+        return row >= 1 && row <= 8 && col >= 1 && col <= 8;
     }
 
     private boolean isValidMove(ChessPosition position, ChessBoard board) {
