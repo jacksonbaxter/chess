@@ -189,17 +189,14 @@ public class ChessPiece {
 
     private void addPawnMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
         int direction = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 1 : -1;
-        int startRow = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 1 : 6;
-        int promotionRow = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 7 : 0;
+        int startRow = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 2 : 7;  // Assuming 1-based indexing
+        int promotionRow = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 8 : 1;
 
         // Single square forward
         int newRow = myPosition.getRow() + direction;
         if (isPositionValid(newRow, myPosition.getColumn()) && board.getPiece(new ChessPosition(newRow, myPosition.getColumn())) == null) {
-            if (newRow == promotionRow) {
-                moves.add(new ChessMove(myPosition, new ChessPosition(newRow, myPosition.getColumn()), PieceType.QUEEN)); // Promotion to queen
-            } else {
-                moves.add(new ChessMove(myPosition, new ChessPosition(newRow, myPosition.getColumn()), null));
-            }
+            addPromotionIfValid(moves, myPosition, newRow, myPosition.getColumn(), promotionRow);
+
             // Double square forward from start position
             if (myPosition.getRow() == startRow) {
                 newRow += direction;
@@ -215,15 +212,21 @@ public class ChessPiece {
             if (isPositionValid(newRow, newCol)) {
                 ChessPiece pieceAtNewPosition = board.getPiece(new ChessPosition(newRow, newCol));
                 if (pieceAtNewPosition != null && pieceAtNewPosition.getTeamColor() != this.pieceColor) {
-                    if (newRow == promotionRow) {
-                        moves.add(new ChessMove(myPosition, new ChessPosition(newRow, newCol), PieceType.QUEEN)); // Promotion to queen
-                    } else {
-                        moves.add(new ChessMove(myPosition, new ChessPosition(newRow, newCol), null));
-                    }
+                    addPromotionIfValid(moves, myPosition, newRow, newCol, promotionRow);
                 }
             }
         }
     }
+
+    private void addPromotionIfValid(Collection<ChessMove> moves, ChessPosition myPosition, int newRow, int newCol, int promotionRow) {
+        ChessPosition newPosition = new ChessPosition(newRow, newCol);
+        if (newRow == promotionRow) {
+            moves.add(new ChessMove(myPosition, newPosition, PieceType.QUEEN)); // Promotion to queen
+        } else {
+            moves.add(new ChessMove(myPosition, newPosition, null));
+        }
+    }
+
 
     /**
      * The various different chess piece options
