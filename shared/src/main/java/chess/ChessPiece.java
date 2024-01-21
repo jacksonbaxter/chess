@@ -10,24 +10,21 @@ import java.util.HashSet;
  * signature of the existing methods.
  */
 public class ChessPiece {
+    private static final int[][] KING_DIRECTIONS = {
+            {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
+    };
+    private static final int[][] QUEEN_DIRECTIONS = {
+            {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
+    };
+    private static final int[][] BISHOP_DIRECTIONS = {
+            {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+    };
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
 
     public ChessPiece(ChessGame.TeamColor pieceColor, ChessPiece.PieceType type) {
         this.pieceColor = pieceColor;
         this.type = type;
-    }
-
-    /**
-     * The various different chess piece options
-     */
-    public enum PieceType {
-        KING,
-        QUEEN,
-        BISHOP,
-        KNIGHT,
-        ROOK,
-        PAWN
     }
 
     /**
@@ -87,34 +84,26 @@ public class ChessPiece {
         return pieceAtPosition == null || pieceAtPosition.getTeamColor() != this.pieceColor;
     }
 
-    private static final int[][] KING_DIRECTIONS = {
-            {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
-    };
-
     private void addKingMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
-        for(int i = 0; i < KING_DIRECTIONS.length; i++) {
+        for (int i = 0; i < KING_DIRECTIONS.length; i++) {
             int newRow = myPosition.getRow() + KING_DIRECTIONS[i][0];
             int newCol = myPosition.getColumn() + KING_DIRECTIONS[i][1];
 
-            if(isPositionValid(newRow, newCol)) {
+            if (isPositionValid(newRow, newCol)) {
                 ChessPosition newPosition = new ChessPosition(newRow, newCol);
-                if(isValidMove(newPosition, board)) {
+                if (isValidMove(newPosition, board)) {
                     moves.add(new ChessMove(myPosition, newPosition, null));
                 }
             }
         }
     }
 
-    private static final int[][] QUEEN_DIRECTIONS = {
-            {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
-    };
-
     private void addQueenMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
-        for(int[] direction : QUEEN_DIRECTIONS) {
+        for (int[] direction : QUEEN_DIRECTIONS) {
             int newRow = myPosition.getRow();
             int newCol = myPosition.getColumn();
 
-            while(isPositionValid(newRow += direction[0], newCol += direction[1])) {
+            while (isPositionValid(newRow += direction[0], newCol += direction[1])) {
                 ChessPosition newPosition = new ChessPosition(newRow, newCol);
                 ChessPiece pieceAtNewPosition = board.getPiece(newPosition);
 
@@ -129,5 +118,39 @@ public class ChessPiece {
                 }
             }
         }
+    }
+
+    private void addBishopMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
+        for (int[] direction : BISHOP_DIRECTIONS) {
+            int newRow = myPosition.getRow();
+            int newCol = myPosition.getColumn();
+
+            while (isPositionValid(newRow += direction[0], newCol += direction[1])) {
+                ChessPosition newPosition = new ChessPosition(newRow, newCol);
+                ChessPiece pieceAtNewPosition = board.getPiece(newPosition);
+
+                // Add the move if it's valid (either an empty square or capturing an opponent's piece)
+                if (isValidMove(newPosition, board)) {
+                    moves.add(new ChessMove(myPosition, newPosition, null));
+                }
+
+                // Break out of the loop if the square is not empty
+                if (pieceAtNewPosition != null) {
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * The various different chess piece options
+     */
+    public enum PieceType {
+        KING,
+        QUEEN,
+        BISHOP,
+        KNIGHT,
+        ROOK,
+        PAWN
     }
 }
