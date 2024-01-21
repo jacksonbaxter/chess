@@ -2,6 +2,7 @@ package chess;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 /**
  * Represents a single chess piece
@@ -82,7 +83,7 @@ public class ChessPiece {
     }
 
     private boolean isPositionValid(int row, int col) {
-        return row >= 0 && row <= 8 && col >= 0 && col <= 8;
+        return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
 
     private boolean isValidMove(ChessPosition position, ChessBoard board) {
@@ -234,5 +235,19 @@ public class ChessPiece {
         KNIGHT,
         ROOK,
         PAWN
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof ChessPiece temp)) return false;
+
+        return (pieceColor == null ? temp.pieceColor == null : pieceColor.equals(temp.pieceColor))
+                && (type == null ? temp.type == null : type.equals(temp.type));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pieceColor, type);
     }
 }

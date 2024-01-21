@@ -1,5 +1,7 @@
 package chess;
 
+import java.util.Arrays;
+
 /**
  * A chessboard that can hold and rearrange chess pieces.
  * <p>
@@ -38,7 +40,7 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-        final int[] MAJOR_PIECE_POSITIONS = {0 , 7, 1, 6, 2, 5, 3, 4}; // Rook, Knight, Bishop, Queen, King
+        final int[] MAJOR_PIECE_POSITIONS = {0, 7, 1, 6, 2, 5, 3, 4}; // Rook, Knight, Bishop, Queen, King
 
         setupMajorPieces(0, ChessGame.TeamColor.WHITE, MAJOR_PIECE_POSITIONS);
         setupMajorPieces(7, ChessGame.TeamColor.BLACK, MAJOR_PIECE_POSITIONS);
@@ -57,5 +59,18 @@ public class ChessBoard {
         for (int col = 0; col < 8; col++) {
             this.board[row][col] = new ChessPiece(color, ChessPiece.PieceType.PAWN);
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof ChessBoard temp)) return false;
+
+        return Arrays.deepEquals(this.board, temp.board);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.deepHashCode(board);
     }
 }
