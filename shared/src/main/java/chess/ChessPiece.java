@@ -186,6 +186,44 @@ public class ChessPiece {
         }
     }
 
+    private void addPawnMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
+        int direction = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 1 : -1;
+        int startRow = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 1 : 6;
+        int promotionRow = (this.pieceColor == ChessGame.TeamColor.WHITE) ? 7 : 0;
+
+        // Single square forward
+        int newRow = myPosition.getRow() + direction;
+        if (isPositionValid(newRow, myPosition.getColumn()) && board.getPiece(new ChessPosition(newRow, myPosition.getColumn())) == null) {
+            if (newRow == promotionRow) {
+                moves.add(new ChessMove(myPosition, new ChessPosition(newRow, myPosition.getColumn()), PieceType.QUEEN)); // Promotion to queen
+            } else {
+                moves.add(new ChessMove(myPosition, new ChessPosition(newRow, myPosition.getColumn()), null));
+            }
+            // Double square forward from start position
+            if (myPosition.getRow() == startRow) {
+                newRow += direction;
+                if (isPositionValid(newRow, myPosition.getColumn()) && board.getPiece(new ChessPosition(newRow, myPosition.getColumn())) == null) {
+                    moves.add(new ChessMove(myPosition, new ChessPosition(newRow, myPosition.getColumn()), null));
+                }
+            }
+        }
+
+        // Diagonal captures
+        for (int colOffset : new int[]{-1, 1}) {
+            int newCol = myPosition.getColumn() + colOffset;
+            if (isPositionValid(newRow, newCol)) {
+                ChessPiece pieceAtNewPosition = board.getPiece(new ChessPosition(newRow, newCol));
+                if (pieceAtNewPosition != null && pieceAtNewPosition.getTeamColor() != this.pieceColor) {
+                    if (newRow == promotionRow) {
+                        moves.add(new ChessMove(myPosition, new ChessPosition(newRow, newCol), PieceType.QUEEN)); // Promotion to queen
+                    } else {
+                        moves.add(new ChessMove(myPosition, new ChessPosition(newRow, newCol), null));
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * The various different chess piece options
      */
