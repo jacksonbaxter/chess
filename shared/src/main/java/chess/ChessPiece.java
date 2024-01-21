@@ -19,6 +19,12 @@ public class ChessPiece {
     private static final int[][] BISHOP_DIRECTIONS = {
             {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
     };
+    private static final int[][] KNIGHT_DIRECTIONS = {
+            {2, 1}, {1, 2}, {-1, 2}, {-2, 1}, {-2, -1}, {-1, -2}, {1, -2}, {2, -1}
+    };
+    private static final int[][] ROOK_DIRECTIONS = {
+            {0, 1}, {1, 0}, {0, -1}, {-1, 0}
+    };
     private final ChessGame.TeamColor pieceColor;
     private final PieceType type;
 
@@ -89,6 +95,7 @@ public class ChessPiece {
             int newRow = myPosition.getRow() + KING_DIRECTIONS[i][0];
             int newCol = myPosition.getColumn() + KING_DIRECTIONS[i][1];
 
+            // Add the move if it's valid (either an empty square or capturing an opponent's piece)
             if (isPositionValid(newRow, newCol)) {
                 ChessPosition newPosition = new ChessPosition(newRow, newCol);
                 if (isValidMove(newPosition, board)) {
@@ -122,6 +129,43 @@ public class ChessPiece {
 
     private void addBishopMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
         for (int[] direction : BISHOP_DIRECTIONS) {
+            int newRow = myPosition.getRow();
+            int newCol = myPosition.getColumn();
+
+            while (isPositionValid(newRow += direction[0], newCol += direction[1])) {
+                ChessPosition newPosition = new ChessPosition(newRow, newCol);
+                ChessPiece pieceAtNewPosition = board.getPiece(newPosition);
+
+                // Add the move if it's valid (either an empty square or capturing an opponent's piece)
+                if (isValidMove(newPosition, board)) {
+                    moves.add(new ChessMove(myPosition, newPosition, null));
+                }
+
+                // Break out of the loop if the square is not empty
+                if (pieceAtNewPosition != null) {
+                    break;
+                }
+            }
+        }
+    }
+
+    private void addKnightMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
+        for (int[] direction : KNIGHT_DIRECTIONS) {
+            int newRow = myPosition.getRow() + direction[0];
+            int newCol = myPosition.getColumn() + direction[1];
+
+            // Add the move if it's valid (either an empty square or capturing an opponent's piece)
+            if (isPositionValid(newRow, newCol)) {
+                ChessPosition newPosition = new ChessPosition(newRow, newCol);
+                if (isValidMove(newPosition, board)) {
+                    moves.add(new ChessMove(myPosition, newPosition, null));
+                }
+            }
+        }
+    }
+
+    private void addRookMoves(Collection<ChessMove> moves, ChessBoard board, ChessPosition myPosition) {
+        for (int[] direction : ROOK_DIRECTIONS) {
             int newRow = myPosition.getRow();
             int newCol = myPosition.getColumn();
 
