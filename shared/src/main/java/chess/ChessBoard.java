@@ -9,7 +9,7 @@ import java.util.Arrays;
  * signature of the existing methods.
  */
 public class ChessBoard {
-    public ChessPiece[][] board;
+    private final ChessPiece[][] board;
     public ChessBoard() {
         this.board = new ChessPiece[8][8];
     }
@@ -21,7 +21,7 @@ public class ChessBoard {
      * @param piece    the piece to add
      */
     public void addPiece(ChessPosition position, ChessPiece piece) {
-        this.board[position.getRow()][position.getColumn()] = piece;
+        this.board[position.getRow() - 1][position.getColumn() - 1] = piece;
     }
 
     /**
@@ -32,7 +32,7 @@ public class ChessBoard {
      * position
      */
     public ChessPiece getPiece(ChessPosition position) {
-        return this.board[position.getRow()][position.getColumn()];
+        return this.board[position.getRow() - 1][position.getColumn() - 1];
     }
 
     /**
@@ -40,24 +40,33 @@ public class ChessBoard {
      * (How the game of chess normally starts)
      */
     public void resetBoard() {
-        final int[] MAJOR_PIECE_POSITIONS = {0, 7, 1, 6, 2, 5, 3, 4}; // Rook, Knight, Bishop, Queen, King
+        // Clear the board first
+        for (int i = 0; i < 8; i++) {
+            Arrays.fill(this.board[i], null);
+        }
 
-        setupMajorPieces(0, ChessGame.TeamColor.WHITE, MAJOR_PIECE_POSITIONS);
-        setupMajorPieces(7, ChessGame.TeamColor.BLACK, MAJOR_PIECE_POSITIONS);
-        setupPawns(1, ChessGame.TeamColor.WHITE);
-        setupPawns(6, ChessGame.TeamColor.BLACK);
+        final int[] MAJOR_PIECE_POSITIONS = {1, 2, 3, 4, 5, 6, 7, 8};
+
+        setupMajorPieces(1, ChessGame.TeamColor.WHITE, MAJOR_PIECE_POSITIONS);
+        setupMajorPieces(8, ChessGame.TeamColor.BLACK, MAJOR_PIECE_POSITIONS);
+        setupPawns(2, ChessGame.TeamColor.WHITE);
+        setupPawns(7, ChessGame.TeamColor.BLACK);
     }
 
     private void setupMajorPieces(int row, ChessGame.TeamColor teamColor, int[] positions) {
-        ChessPiece.PieceType[] types = {ChessPiece.PieceType.ROOK, ChessPiece.PieceType.KNIGHT, ChessPiece.PieceType.BISHOP, ChessPiece.PieceType.QUEEN, ChessPiece.PieceType.KING};
+        ChessPiece.PieceType[] types = {
+                ChessPiece.PieceType.ROOK, ChessPiece.PieceType.KNIGHT, ChessPiece.PieceType.BISHOP,
+                ChessPiece.PieceType.QUEEN, ChessPiece.PieceType.KING, ChessPiece.PieceType.BISHOP,
+                ChessPiece.PieceType.KNIGHT, ChessPiece.PieceType.ROOK
+        };
         for (int j = 0; j < positions.length; j++) {
-            this.board[row][positions[j]] = new ChessPiece(teamColor, types[j / 2]);
+            addPiece(new ChessPosition(row, positions[j]), new ChessPiece(teamColor, types[j]));
         }
     }
 
     private void setupPawns(int row, ChessGame.TeamColor color) {
-        for (int col = 0; col < 8; col++) {
-            this.board[row][col] = new ChessPiece(color, ChessPiece.PieceType.PAWN);
+        for (int col = 1; col <= 8; col++) {
+            addPiece(new ChessPosition(row, col), new ChessPiece(color, ChessPiece.PieceType.PAWN));
         }
     }
 
