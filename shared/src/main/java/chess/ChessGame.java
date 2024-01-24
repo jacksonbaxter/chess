@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -50,7 +51,17 @@ public class ChessGame {
      * startPosition
      */
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
-        throw new RuntimeException("Not implemented");
+        // Check if there's a piece at the given position
+        ChessPiece piece = board.getPiece(startPosition);
+        if (piece == null || piece.getTeamColor() != currTeamColor) {
+            // Return empty collection if no piece at startPosition
+            // or if the piece does not belong to the current team
+            return Collections.emptySet();
+        }
+
+        // Get valid moves for the piece
+        Collection<ChessMove> moves = piece.pieceMoves(board, startPosition);
+        return moves;
     }
 
     /**
