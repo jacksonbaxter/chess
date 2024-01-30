@@ -54,14 +54,12 @@ public class ChessGame {
         // Check if there's a piece at the given position
         ChessPiece piece = board.getPiece(startPosition);
         if (piece == null || piece.getTeamColor() != currTeamColor) {
-            // Return empty collection if no piece at startPosition
-            // or if the piece does not belong to the current team
+            // Return empty collection if no piece at startPosition or if the piece does not belong to the current team
             return Collections.emptySet();
         }
 
         // Get valid moves for the piece
-        Collection<ChessMove> moves = piece.pieceMoves(board, startPosition);
-        return moves;
+        return piece.pieceMoves(board, startPosition);
     }
 
     /**
@@ -71,7 +69,40 @@ public class ChessGame {
      * @throws InvalidMoveException if move is invalid
      */
     public void makeMove(ChessMove move) throws InvalidMoveException {
-        throw new RuntimeException("Not implemented");
+        ChessPosition startPosition = move.getStartPosition();
+        ChessPosition endPosition = move.getEndPosition();
+
+        // Get the piece at the startPosition
+        ChessPiece piece = board.getPiece(startPosition);
+        if (piece == null || piece.getTeamColor() != currTeamColor) {
+            throw new InvalidMoveException("No piece at the starting position or not your turn");
+        }
+
+        // Check if the move is valid
+        Collection<ChessMove> validMoves = piece.pieceMoves(board, startPosition);
+        if (!validMoves.contains(move)) {
+            throw new InvalidMoveException("Invalid move");
+        }
+
+        // Execute the move
+        board.addPiece(endPosition, piece);
+        board.addPiece(startPosition, null);
+
+        // Handle capture if there's an opposing piece at the toPosition
+        ChessPiece capturedPiece = board.getPiece(endPosition);
+        if (capturedPiece != null && capturedPiece.getTeamColor() != currTeamColor) {
+            // Implement capture logic (e.g., removing the captured piece)
+        }
+
+        // Pawn promotion logic (if applicable)
+        if (piece.getPieceType() == ChessPiece.PieceType.PAWN && (endPosition.getRow() == 1 || endPosition.getRow() == 8)) {
+            // Implement pawn promotion logic
+        }
+
+        // Update the current team's turn
+        currTeamColor = (currTeamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
+
+        // Additional checks for check/checkmate/stalemate can be added here
     }
 
     /**
