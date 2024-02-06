@@ -1,8 +1,10 @@
 package chess;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -58,9 +60,16 @@ public class ChessGame {
             // Return empty collection if no piece at startPosition or if the piece does not belong to the current team
             return Collections.emptySet();
         }
+        Collection<ChessMove> potentialMoves = piece.pieceMoves(board, startPosition);
+        Collection<ChessMove> validMoves = new ArrayList<>();
 
-        // Get valid moves for the piece
-        return piece.pieceMoves(board, startPosition);
+        for (ChessMove move : potentialMoves) {
+            if (simulateMove(move)) {
+                validMoves.add(move);
+            }
+        }
+
+        return validMoves;
     }
 
     /**
@@ -76,7 +85,7 @@ public class ChessGame {
         // Get the piece at the startPosition
         ChessPiece piece = board.getPiece(startPosition);
         if (piece == null || piece.getTeamColor() != currTeamColor) {
-            throw new InvalidMoveException("No piece at the starting position or not your turn");
+            throw new InvalidMoveException("No piece at the starting position and/or not your turn");
         }
 
         // Check if the move is valid
@@ -181,26 +190,31 @@ public class ChessGame {
     private boolean canPieceEscapeCheck(ChessPosition currentPosition, ChessPiece currentPiece) {
         Collection<ChessMove> possibleMoves = currentPiece.pieceMoves(board, currentPosition);
         for (ChessMove move : possibleMoves) {
-            if (simulateMove(currentPosition, move)) {
+            if (simulateMove(move)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean simulateMove(ChessPosition currentPosition, ChessMove move) {
-        ChessPiece originalPiece = board.getPiece(move.getEndPosition());
-        // Perform move
-        board.addPiece(move.getEndPosition(), board.getPiece(currentPosition));
-        board.addPiece(currentPosition, null);
+    private boolean simulateMove(ChessMove move) {
+            // Save current state
+            ChessPiece originalPieceAtEnd = board.getPiece(move.getEndPosition());
+            ChessPiece originalPieceAtStart = board.getPiece(move.getStartPosition());
 
-        boolean stillInCheck = isInCheck(currTeamColor);
+            // Perform the move
+            board.addPiece(move.getEndPosition(), originalPieceAtStart);
+            board.addPiece(move.getStartPosition(), null);
 
-        // Undo move
-        board.addPiece(currentPosition, board.getPiece(move.getEndPosition()));
-        board.addPiece(move.getEndPosition(), originalPiece);
+            // Check if move puts own king in check
+            boolean isInCheckAfterMove = isInCheck(currTeamColor);
 
-        return !stillInCheck;
+            // Revert the move
+            board.addPiece(move.getStartPosition(), originalPieceAtStart);
+            board.addPiece(move.getEndPosition(), originalPieceAtEnd);
+
+            // Return true if move does not put own king in check
+            return !isInCheckAfterMove;
     }
 
     /**
