@@ -209,7 +209,46 @@ public class ChessGame {
      * @return True if the specified team is in stalemate, otherwise false
      */
     public boolean isInStalemate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        // Can't be stalemate if someone is in check.
+        if (isInCheck(teamColor)) {
+            return false;
+        }
+
+        // Iterate over all pieces of the current player's team in order to find a possible move.
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition currentPosition = new ChessPosition(row, col);
+                ChessPiece piece = board.getPiece(currentPosition);
+
+                // Skip if there's no piece or if the piece is not from the current player's team.
+                if (piece == null || piece.getTeamColor() != teamColor) {
+                    continue;
+                }
+
+                // Get all possible moves for this piece.
+                Collection<ChessMove> possibleMoves = piece.pieceMoves(board, currentPosition);
+
+                for (ChessMove move : possibleMoves) {
+                    // Simulate each move.
+                    ChessPiece targetPiece = board.getPiece(move.getEndPosition());
+                    // Execute the move temporarily.
+                    board.addPiece(move.getEndPosition(), piece);
+                    board.addPiece(currentPosition, null);
+
+                    boolean stillInCheckAfterMove = isInCheck(teamColor);
+
+                    // Undo the move.
+                    board.addPiece(currentPosition, piece);
+                    board.addPiece(move.getEndPosition(), targetPiece);
+
+                    // If, after any move, the player is not in check, it's not a stalemate.
+                    if (!stillInCheckAfterMove) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     /**
