@@ -98,12 +98,6 @@ public class ChessGame {
         board.addPiece(endPosition, piece);
         board.addPiece(startPosition, null);
 
-        // Handle capture if there's an opposing piece at the toPosition
-        ChessPiece capturedPiece = board.getPiece(endPosition);
-        if (capturedPiece != null && capturedPiece.getTeamColor() != currTeamColor) {
-            // Implement capture logic (e.g., removing the captured piece)
-        }
-
         // Pawn promotion logic
         if (piece.getPieceType() == ChessPiece.PieceType.PAWN && (endPosition.getRow() == 1 || endPosition.getRow() == 8)) {
             piece = new ChessPiece(piece.getTeamColor(), move.getPromotionPiece());
@@ -112,8 +106,6 @@ public class ChessGame {
 
         // Update the current team's turn
         currTeamColor = (currTeamColor == TeamColor.WHITE) ? TeamColor.BLACK : TeamColor.WHITE;
-
-        // Additional checks for check/checkmate/stalemate can be added here
     }
 
     /**
