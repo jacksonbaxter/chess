@@ -95,9 +95,10 @@ public class ChessGame {
             // Implement capture logic (e.g., removing the captured piece)
         }
 
-        // Pawn promotion logic (if applicable)
+        // Pawn promotion logic
         if (piece.getPieceType() == ChessPiece.PieceType.PAWN && (endPosition.getRow() == 1 || endPosition.getRow() == 8)) {
-            // Implement pawn promotion logic
+            piece = new ChessPiece(piece.getTeamColor(), move.getPromotionPiece());
+            board.addPiece(endPosition, piece);
         }
 
         // Update the current team's turn
