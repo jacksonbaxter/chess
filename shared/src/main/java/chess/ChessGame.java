@@ -56,7 +56,7 @@ public class ChessGame {
     public Collection<ChessMove> validMoves(ChessPosition startPosition) {
         // Check if there's a piece at the given position
         ChessPiece piece = board.getPiece(startPosition);
-        if (piece == null || piece.getTeamColor() != currTeamColor) {
+        if (piece == null) {
             // Return empty collection if no piece at startPosition or if the piece does not belong to the current team
             return Collections.emptySet();
         }
@@ -64,7 +64,7 @@ public class ChessGame {
         Collection<ChessMove> validMoves = new ArrayList<>();
 
         for (ChessMove move : potentialMoves) {
-            if (simulateMove(move)) {
+            if (simulateMove(move, piece.getTeamColor())) {
                 validMoves.add(move);
             }
         }
@@ -182,14 +182,14 @@ public class ChessGame {
     private boolean canPieceEscapeCheck(ChessPosition currentPosition, ChessPiece currentPiece) {
         Collection<ChessMove> possibleMoves = currentPiece.pieceMoves(board, currentPosition);
         for (ChessMove move : possibleMoves) {
-            if (simulateMove(move)) {
+            if (simulateMove(move, currTeamColor)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean simulateMove(ChessMove move) {
+    private boolean simulateMove(ChessMove move, TeamColor teamColor) {
             // Save current state
             ChessPiece originalPieceAtEnd = board.getPiece(move.getEndPosition());
             ChessPiece originalPieceAtStart = board.getPiece(move.getStartPosition());
@@ -199,7 +199,7 @@ public class ChessGame {
             board.addPiece(move.getStartPosition(), null);
 
             // Check if move puts own king in check
-            boolean isInCheckAfterMove = isInCheck(currTeamColor);
+            boolean isInCheckAfterMove = isInCheck(teamColor);
 
             // Revert the move
             board.addPiece(move.getStartPosition(), originalPieceAtStart);
