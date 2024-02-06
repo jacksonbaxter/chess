@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * For a class that can manage a chess game, making moves on a board
@@ -36,14 +35,6 @@ public class ChessGame {
      */
     public void setTeamTurn(TeamColor team) {
         this.currTeamColor = team;
-    }
-
-    /**
-     * Enum identifying the 2 possible teams in a chess game
-     */
-    public enum TeamColor {
-        WHITE,
-        BLACK
     }
 
     /**
@@ -190,23 +181,23 @@ public class ChessGame {
     }
 
     private boolean simulateMove(ChessMove move, TeamColor teamColor) {
-            // Save current state
-            ChessPiece originalPieceAtEnd = board.getPiece(move.getEndPosition());
-            ChessPiece originalPieceAtStart = board.getPiece(move.getStartPosition());
+        // Save current state
+        ChessPiece originalPieceAtEnd = board.getPiece(move.getEndPosition());
+        ChessPiece originalPieceAtStart = board.getPiece(move.getStartPosition());
 
-            // Perform the move
-            board.addPiece(move.getEndPosition(), originalPieceAtStart);
-            board.addPiece(move.getStartPosition(), null);
+        // Perform the move
+        board.addPiece(move.getEndPosition(), originalPieceAtStart);
+        board.addPiece(move.getStartPosition(), null);
 
-            // Check if move puts own king in check
-            boolean isInCheckAfterMove = isInCheck(teamColor);
+        // Check if move puts own king in check
+        boolean isInCheckAfterMove = isInCheck(teamColor);
 
-            // Revert the move
-            board.addPiece(move.getStartPosition(), originalPieceAtStart);
-            board.addPiece(move.getEndPosition(), originalPieceAtEnd);
+        // Revert the move
+        board.addPiece(move.getStartPosition(), originalPieceAtStart);
+        board.addPiece(move.getEndPosition(), originalPieceAtEnd);
 
-            // Return true if move does not put own king in check
-            return !isInCheckAfterMove;
+        // Return true if move does not put own king in check
+        return !isInCheckAfterMove;
     }
 
     /**
@@ -260,21 +251,21 @@ public class ChessGame {
     }
 
     /**
-     * Sets this game's chessboard with a given board
-     *
-     * @param board the new board to use
-     */
-    public void setBoard(ChessBoard board) {
-        this.board = board;
-    }
-
-    /**
      * Gets the current chessboard
      *
      * @return the chessboard
      */
     public ChessBoard getBoard() {
         return this.board;
+    }
+
+    /**
+     * Sets this game's chessboard with a given board
+     *
+     * @param board the new board to use
+     */
+    public void setBoard(ChessBoard board) {
+        this.board = board;
     }
 
     @Override
@@ -289,5 +280,13 @@ public class ChessGame {
     @Override
     public int hashCode() {
         return Objects.hash(board, currTeamColor);
+    }
+
+    /**
+     * Enum identifying the 2 possible teams in a chess game
+     */
+    public enum TeamColor {
+        WHITE,
+        BLACK
     }
 }
