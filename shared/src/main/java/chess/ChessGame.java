@@ -89,7 +89,7 @@ public class ChessGame {
         }
 
         // Check if the move is valid
-        Collection<ChessMove> validMoves = piece.pieceMoves(board, startPosition);
+        Collection<ChessMove> validMoves = validMoves(move.getStartPosition());
         if (!validMoves.contains(move)) {
             throw new InvalidMoveException("Invalid move");
         }
