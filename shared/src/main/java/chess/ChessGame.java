@@ -157,7 +157,48 @@ public class ChessGame {
      * @return True if the specified team is in checkmate
      */
     public boolean isInCheckmate(TeamColor teamColor) {
-        throw new RuntimeException("Not implemented");
+        if (!isInCheck(teamColor)) {
+            return false; // Not in checkmate if not in check
+        }
+
+        for (int row = 1; row <= 8; row++) {
+            for (int col = 1; col <= 8; col++) {
+                ChessPosition currentPosition = new ChessPosition(row, col);
+                ChessPiece currentPiece = board.getPiece(currentPosition);
+
+                if (currentPiece != null && currentPiece.getTeamColor() == teamColor) {
+                    if (canPieceEscapeCheck(currentPosition, currentPiece)) {
+                        return false; // Found at least one move to escape check
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean canPieceEscapeCheck(ChessPosition currentPosition, ChessPiece currentPiece) {
+        Collection<ChessMove> possibleMoves = currentPiece.pieceMoves(board, currentPosition);
+        for (ChessMove move : possibleMoves) {
+            if (simulateMove(currentPosition, move)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean simulateMove(ChessPosition currentPosition, ChessMove move) {
+        ChessPiece originalPiece = board.getPiece(move.getEndPosition());
+        // Perform move
+        board.addPiece(move.getEndPosition(), board.getPiece(currentPosition));
+        board.addPiece(currentPosition, null);
+
+        boolean stillInCheck = isInCheck(currTeamColor);
+
+        // Undo move
+        board.addPiece(currentPosition, board.getPiece(move.getEndPosition()));
+        board.addPiece(move.getEndPosition(), originalPiece);
+
+        return !stillInCheck;
     }
 
     /**
