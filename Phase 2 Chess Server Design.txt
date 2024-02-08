@@ -1,0 +1,204 @@
+actor Client
+participant Server
+participant RegistrationService
+participant DataAccess
+database db
+
+group #navy Registration #white
+Client -> Server: [POST] /user\n{username, password, email}
+Server -> RegistrationService: register(username, password, email)
+RegistrationService -> DataAccess: getUser(username)
+DataAccess -> db: SELECT username from user
+DataAccess --> RegistrationService: null
+RegistrationService -> DataAccess: createUser(username, password)
+DataAccess -> db: INSERT username, password, email INTO user
+RegistrationService -> DataAccess: createAuth(username)
+DataAccess -> db: INSERT username, authToken INTO auth
+DataAccess --> RegistrationService: authToken
+RegistrationService --> Server: authToken
+Server --> Client: 200\n{authToken}
+end
+
+actor Client
+participant Server
+participant LoginService
+participant DataAccess
+database db
+
+group #orange Login #white
+Client -> Server: [POST] /session\n{"username":"", "password":""}
+Server -> LoginService: authenticate(username, password)
+LoginService -> DataAccess: getUser(username, password)
+DataAccess -> db: SELECT username, password FROM user
+alt success
+    DataAccess --> LoginService: user details
+    LoginService -> DataAccess: generateAuthToken(username)
+    DataAccess -> db: UPDATE user SET authToken=NEW_TOKEN WHERE username=username
+    DataAccess --> LoginService: authToken
+    LoginService --> Server: 200\n{"username":"", "authToken":""}
+    Server --> Client: 200\n{"username":"", "authToken":""}
+else unauthorized
+    DataAccess --> LoginService: null
+    LoginService --> Server: 401\n{"message": "Error: unauthorized"}
+    Server --> Client: 401\n{"message": "Error: unauthorized"}
+else error
+    LoginService --> Server: 500\n{"message": "Error: description"}
+    Server --> Client: 500\n{"message": "Error: description"}
+end
+end
+
+actor Client
+participant Server
+participant AuthService
+participant DataAccess
+database db
+
+group #green Logout #white
+Client -> Server: [DELETE] /session\nauthorization: <authToken>
+Server -> AuthService: invalidateToken(authToken)
+AuthService -> DataAccess: getUserByToken(authToken)
+DataAccess -> db: SELECT username FROM user WHERE authToken=authToken
+alt success
+    DataAccess --> AuthService: username
+    AuthService -> DataAccess: removeToken(authToken)
+    DataAccess -> db: UPDATE user SET authToken=NULL WHERE username=username
+    DataAccess --> AuthService: success
+    AuthService --> Server: 200
+    Server --> Client: 200
+else unauthorized
+    DataAccess --> AuthService: null
+    AuthService --> Server: 401\n{"message": "Error: unauthorized"}
+    Server --> Client: 401\n{"message": "Error: unauthorized"}
+else error
+    AuthService --> Server: 500\n{"message": "Error: description"}
+    Server --> Client: 500\n{"message": "Error: description"}
+end
+end
+
+
+actor Client
+participant Server
+participant GameService
+participant DataAccess
+database db
+
+group #red List Games #white
+Client -> Server: [GET] /game\nauthorization: <authToken>
+Server -> GameService: listGames(authToken)
+GameService -> DataAccess: validateAuthToken(authToken)
+DataAccess -> db: SELECT username FROM user WHERE authToken=authToken
+alt success - authToken valid
+    DataAccess --> GameService: username
+    GameService -> DataAccess: getGamesList()
+    DataAccess -> db: SELECT gameID, whiteUsername, blackUsername, gameName FROM game
+    DataAccess --> GameService: [{"gameID": 1234, "whiteUsername":"", "blackUsername":"", "gameName":""}]
+    GameService --> Server: 200\n{"games": [{"gameID": 1234, "whiteUsername":"", "blackUsername":"", "gameName":""}]}
+    Server --> Client: 200\n{"games": [{"gameID": 1234, "whiteUsername":"", "blackUsername":"", "gameName":""}]}
+else unauthorized - authToken invalid
+    DataAccess --> GameService: null
+    GameService --> Server: 401\n{"message": "Error: unauthorized"}
+    Server --> Client: 401\n{"message": "Error: unauthorized"}
+else error
+    GameService --> Server: 500\n{"message": "Error: description"}
+    Server --> Client: 500\n{"message": "Error: description"}
+end
+end
+
+
+actor Client
+participant Server
+participant GameService
+participant DataAccess
+database db
+
+group #purple Create Game #white
+Client -> Server: [POST] /game\nauthorization: <authToken>\n{"gameName":""}
+Server -> GameService: createGame(authToken, gameName)
+GameService -> DataAccess: validateAuthToken(authToken)
+DataAccess -> db: SELECT username FROM user WHERE authToken=authToken
+alt authToken valid
+    DataAccess --> GameService: username
+    GameService -> DataAccess: insertGame(gameName, username)
+    DataAccess -> db: INSERT INTO game (gameName, creatorUsername) VALUES (gameName, username)
+    DataAccess --> GameService: gameID
+    GameService --> Server: 200\n{"gameID": 1234}
+    Server --> Client: 200\n{"gameID": 1234}
+else bad request
+    GameService --> Server: 400\n{"message": "Error: bad request"}
+    Server --> Client: 400\n{"message": "Error: bad request"}
+else unauthorized - authToken invalid
+    DataAccess --> GameService: null
+    GameService --> Server: 401\n{"message": "Error: unauthorized"}
+    Server --> Client: 401\n{"message": "Error: unauthorized"}
+else error
+    GameService --> Server: 500\n{"message": "Error: description"}
+    Server --> Client: 500\n{"message": "Error: description"}
+end
+end
+
+
+actor Client
+participant Server
+participant GameService
+participant DataAccess
+database db
+
+group #yellow Join Game #black
+Client -> Server: [PUT] /game\nauthorization: <authToken>\n{"playerColor":"WHITE/BLACK", "gameID": 1234}
+Server -> GameService: joinGame(authToken, gameID, playerColor)
+GameService -> DataAccess: validateAuthToken(authToken)
+DataAccess -> db: SELECT username FROM user WHERE authToken=authToken
+alt authToken valid
+    DataAccess --> GameService: username
+    GameService -> DataAccess: checkGameExistence(gameID)
+    DataAccess -> db: SELECT gameID FROM game WHERE gameID=gameID
+    alt game exists
+        DataAccess --> GameService: gameID
+        GameService -> DataAccess: assignPlayerToGame(username, gameID, playerColor)
+        alt playerColor valid and slot available
+            DataAccess -> db: UPDATE game SET whiteUsername/ blackUsername=username WHERE gameID=gameID
+            DataAccess --> GameService: success
+            GameService --> Server: 200
+            Server --> Client: 200
+        else color already taken or invalid
+            DataAccess --> GameService: error - already taken or bad request
+            GameService --> Server: 403\n{"message": "Error: already taken"} / 400\n{"message": "Error: bad request"}
+            Server --> Client: 403\n{"message": "Error: already taken"} / 400\n{"message": "Error: bad request"}
+        end
+    else game does not exist
+        DataAccess --> GameService: null
+        GameService --> Server: 400\n{"message": "Error: bad request"}
+        Server --> Client: 400\n{"message": "Error: bad request"}
+    end
+else unauthorized - authToken invalid
+    DataAccess --> GameService: null
+    GameService --> Server: 401\n{"message": "Error: unauthorized"}
+    Server --> Client: 401\n{"message": "Error: unauthorized"}
+else error
+    GameService --> Server: 500\n{"message": "Error: description"}
+    Server --> Client: 500\n{"message": "Error: description"}
+end
+end
+
+
+actor Client
+participant Server
+participant SystemService
+participant DataAccess
+database db
+
+group #gray Clear application #white
+Client -> Server: [DELETE] /db
+Server -> SystemService: clearDatabase()
+SystemService -> DataAccess: removeAllUsers()
+DataAccess -> db: DELETE FROM user
+DataAccess --> SystemService: users cleared
+SystemService -> DataAccess: removeAllGames()
+DataAccess -> db: DELETE FROM game
+DataAccess --> SystemService: games cleared
+SystemService -> DataAccess: removeAllAuthTokens()
+DataAccess -> db: DELETE FROM auth
+DataAccess --> SystemService: authTokens cleared
+SystemService --> Server: 200
+Server --> Client: 200
+end
