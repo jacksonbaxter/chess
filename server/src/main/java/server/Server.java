@@ -1,6 +1,8 @@
 package server;
 
 import com.google.gson.Gson;
+import dataAccess.DataAccessException;
+import handler.JoinRequest;
 import model.GameData;
 import model.UserData;
 import service.GameService;
@@ -36,7 +38,7 @@ public class Server {
         Spark.post("/session", this::login);
         Spark.delete("/db", this::clear);
         Spark.delete("/session", this::logout);
-        Spark.get("/game", this::listGame);
+        Spark.get("/game", this::listGames);
         Spark.post("/game", this::createGame);
         Spark.put("/game", this::joinGame);
         Spark.exception(ResponseException.class, this::exceptionHandler);
@@ -80,7 +82,7 @@ public class Server {
         });
     }
 
-    private Object listGame(Request req, Response res) {
+    private Object listGames(Request req, Response res) {
         return processRequest(res, () -> {
             String authString = req.headers("Authorization");
             var gameData = gameService.listGames(authString);
@@ -88,7 +90,7 @@ public class Server {
         });
     }
 
-    private Object createGame(Request req, Response res) {
+    private Object createGame(Request req, Response res) throws DataAccessException {
         return processRequest(res, () -> {
             String authString = req.headers("Authorization");
             var gameData = GSON.fromJson(req.body(), GameData.class);
@@ -97,7 +99,7 @@ public class Server {
         });
     }
 
-    private Object joinGame(Request req, Response res) {
+    private Object joinGame(Request req, Response res) throws DataAccessException {
         return processRequest(res, () -> {
             String authString = req.headers("Authorization");
             var joinRequest = GSON.fromJson(req.body(), JoinRequest.class);
@@ -131,14 +133,5 @@ public class Server {
     @FunctionalInterface
     private interface RequestHandler {
         Object handle() throws ResponseException, DataAccessException;
-    }
-
-    private Object clear(Request req, Response res) {
-        return processRequest(res, () -> {
-            userService.clear();
-            gameService.clear();
-            res.type(APPLICATION_JSON);
-            return "";
-        });
     }
 }
