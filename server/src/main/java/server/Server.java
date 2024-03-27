@@ -10,6 +10,8 @@ import service.ResponseException;
 import service.UserService;
 import spark.*;
 
+import java.util.Map;
+
 public class Server {
     private static final Gson GSON = new Gson();
     private static final String APPLICATION_JSON = "application/json";
@@ -110,7 +112,7 @@ public class Server {
 
     private void exceptionHandler(ResponseException ex, Request req, Response res) {
         res.type(APPLICATION_JSON);
-        res.status(ex.StatusCode());
+        res.status(ex.getStatusCode());
         res.body(GSON.toJson(Map.of("message", ex.getMessage())));
     }
 
@@ -119,7 +121,7 @@ public class Server {
             res.type(APPLICATION_JSON);
             return handler.handle();
         } catch (ResponseException e) {
-            res.status(e.StatusCode());
+            res.status(e.getStatusCode());
             return e.getMessage();
         } catch (DataAccessException e) {
             res.status(500);
