@@ -1,7 +1,8 @@
 package server;
 
 import com.google.gson.Gson;
-import dataAccess.DataAccessException;
+import dataAccess.*;
+import dataAccess.exceptions.DataAccessException;
 import handler.JoinRequest;
 import model.GameData;
 import model.UserData;
@@ -21,8 +22,11 @@ public class Server {
     private final GameService gameService;
 
     public Server() {
-        this.userService = new UserService();
-        this.gameService = new GameService();
+        MemoryAuthDAO authDAO = new MemoryAuthDAO();
+        MemoryGameDAO gameDAO = new MemoryGameDAO();
+        MemoryUserDAO userDAO = new MemoryUserDAO();
+        this.userService = new UserService(userDAO, authDAO);
+        this.gameService = new GameService(gameDAO, authDAO);
     }
 
     public int run(int desiredPort) {

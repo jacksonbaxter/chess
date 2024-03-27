@@ -1,77 +1,74 @@
 package service;
 
-import dataAccess.*;
-import model.AuthData;
+import dataAccess.exceptions.AlreadyTakenException;
+import dataAccess.exceptions.BadRequestException;
+import dataAccess.exceptions.DataAccessException;
+import dataAccess.exceptions.TakenException;
+import dataAccess.exceptions.UnauthorizedException;
+import dataAccess.AuthDAO;
+import dataAccess.UserDAO;
 import model.UserData;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-import java.util.UUID;
+import model.AuthData;
 
 public class UserService {
-    private final static UserDAO userDAO = new MemoryUserDAO();
-    private final static AuthDAO authDAO = new MemoryAuthDAO();
-    private BCryptPasswordEncoder encoder;
 
-    public AuthData register(UserData user) throws ResponseException, DataAccessException {
-        validateUserData(user, true);
-        if (userDAO.getUser(user.username()) != null) {
-            throw new ResponseException(403, "Error: Username already taken");
+    private UserDAO userDAO;
+    private AuthDAO authDAO;
+
+    public UserService(UserDAO userDao, AuthDAO authDao) {
+        this.userDAO = userDao;
+        this.authDAO = authDao;
+    }
+
+    public AuthData register(UserData user) throws DataAccessException, BadRequestException, TakenException {
+        validateUser(user);
+
+        UserData existingUser = userDAO.getUser(user.username());
+        if (existingUser != null) {
+            throw new TakenException("Username is already taken.");
         }
-        user = new UserData(user.username(), encoder.encode(user.password()), user.email());
+
         userDAO.createUser(user);
-        return createAuth(user.username());
+        return authDAO.createAuth(user);
     }
 
-    public AuthData login(UserData user) throws ResponseException, DataAccessException {
-        validateUserData(user, false);
-        UserData userFromDB = userDAO.getUser(user.username());
-        if (userFromDB == null || !encoder.matches(user.password(), userFromDB.password())) {
-            throw new ResponseException(401, "Error: Invalid credentials");
+    public AuthData login(UserData user) throws DataAccessException, UnauthorizedException {
+        validateCredentials(user.username(), user.password());
+
+        UserData foundUser = userDAO.getUser(user.username());
+        if (foundUser == null || !foundUser.password().equals(user.password())) {
+            throw new UnauthorizedException("Invalid username or password.");
         }
-        return createAuth(user.username());
+
+        return authDAO.createAuth(user);
     }
 
-    public void logout(String authToken) throws ResponseException, DataAccessException {
-        validateAuthTokenBool(authToken);
+    public void logout(String authToken) throws DataAccessException, UnauthorizedException {
+        if (isNullOrEmpty(authToken) || authDAO.getAuth(authToken) == null) {
+            throw new UnauthorizedException("Invalid or expired authToken.");
+        }
+
         authDAO.deleteAuth(authToken);
-    }
-
-    private AuthData createAuth(String username) throws DataAccessException {
-        AuthData authData = new AuthData(UUID.randomUUID().toString(), username);
-        authDAO.createAuth(authData);
-        return authData;
-    }
-
-    private void validateUserData(UserData user, boolean checkEmail) throws ResponseException {
-        if (user.username() == null || user.password() == null || (checkEmail && user.email() == null)) {
-            throw new ResponseException(400, "Error: Missing required fields");
-        }
-    }
-
-    public static Boolean validateAuthTokenBool(String authToken) throws ResponseException, DataAccessException {
-        if (authToken == null || authToken.isEmpty()) {
-            throw new ResponseException(401, "Error: Unauthorized - missing token");
-        }
-        AuthData authData = authDAO.getAuth(authToken);
-        if (authData == null) {
-            throw new ResponseException(401, "Error: Unauthorized - invalid token");
-        }
-        return true;
-    }
-
-    public static String validateAuthTokenUsername(String authToken) throws ResponseException, DataAccessException {
-        if (authToken == null || authToken.isEmpty()) {
-            throw new ResponseException(401, "Error: Unauthorized - missing token");
-        }
-        AuthData authData = authDAO.getAuth(authToken);
-        if (authData == null) {
-            throw new ResponseException(401, "Error: Unauthorized - invalid token");
-        }
-        return authData.username();
     }
 
     public void clear() throws DataAccessException {
         userDAO.clear();
         authDAO.clear();
+    }
+
+    private void validateUser(UserData user) throws BadRequestException {
+        if (user == null || isNullOrEmpty(user.username()) || isNullOrEmpty(user.password()) || isNullOrEmpty(user.email())) {
+            throw new BadRequestException("Username, password, and email cannot be empty.");
+        }
+    }
+
+    private void validateCredentials(String username, String password) throws UnauthorizedException {
+        if (isNullOrEmpty(username) || isNullOrEmpty(password)) {
+            throw new UnauthorizedException("Username and password must be provided.");
+        }
+    }
+
+    private boolean isNullOrEmpty(String str) {
+        return str == null || str.trim().isEmpty();
     }
 }
