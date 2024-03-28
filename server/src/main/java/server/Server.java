@@ -4,10 +4,8 @@ import com.google.gson.Gson;
 import dataAccess.MemoryAuthDAO;
 import dataAccess.MemoryGameDAO;
 import dataAccess.MemoryUserDAO;
-import dataAccess.exceptions.BadRequestException;
-import dataAccess.exceptions.DataAccessException;
-import dataAccess.exceptions.TakenException;
-import dataAccess.exceptions.UnauthorizedException;
+import dataAccess.exceptions.*;
+import model.AuthData;
 import model.GameData;
 import model.UserData;
 import service.GameService;
@@ -25,19 +23,17 @@ public class Server {
     private final Gson gson = new Gson();
 
     public Server() {
-        MemoryAuthDAO authDao = new MemoryAuthDAO();
-        MemoryGameDAO gameDao = new MemoryGameDAO();
-        MemoryUserDAO userDao = new MemoryUserDAO();
-        this.userService = new UserService(userDao, authDao);
-        this.gameService = new GameService(gameDao, authDao);
+        MemoryAuthDAO MemoryAuthDAO = new MemoryAuthDAO();
+        MemoryGameDAO MemoryGameDAO = new MemoryGameDAO();
+        MemoryUserDAO MemoryUserDAO = new MemoryUserDAO();
+        this.userService = new UserService(MemoryUserDAO, MemoryAuthDAO);
+        this.gameService = new GameService(MemoryGameDAO, MemoryAuthDAO);
     }
 
     public int run(int desiredPort) {
         Spark.port(desiredPort);
-        Spark.staticFiles.location("web");
-
+        Spark.staticFiles.location("/web"); // Ensure the path is correctly specified
         setupRoutes();
-
         Spark.awaitInitialization();
         return Spark.port();
     }
@@ -52,89 +48,96 @@ public class Server {
         Spark.delete("/db", this::clear);
     }
 
-    private Object handleRequest(Request req, Response res, RequestHandler handler) {
-        res.type("application/json");
-        try {
-            return gson.toJson(handler.handle(req));
-        } catch (Exception e) {
-            res.status(getStatusCode(e));
-            return gson.toJson(Map.of("message", e.getMessage()));
-        }
-    }
-
-    private int getStatusCode(Exception e) {
-        if (e instanceof BadRequestException) return 400;
-        if (e instanceof UnauthorizedException) return 401;
-        if (e instanceof TakenException) return 403;
-        if (e instanceof DataAccessException) return 500;
-        return 500; // Default to internal server error
-    }
-
     private Object register(Request req, Response res) {
-        return handleRequest(req, res, request -> {
-            UserData newUser = gson.fromJson(request.body(), UserData.class);
-            return userService.register(newUser);
+        return handleRequest(req, res, () -> {
+            UserData newUser = gson.fromJson(req.body(), UserData.class);
+            AuthData authData = userService.register(newUser);
+            res.status(200);
+            return authData;
         });
     }
 
     private Object login(Request req, Response res) {
-        return handleRequest(req, res, request -> {
-            UserData loginUser = gson.fromJson(request.body(), UserData.class);
-            return userService.login(loginUser);
+        return handleRequest(req, res, () -> {
+            UserData loginUser = gson.fromJson(req.body(), UserData.class);
+            AuthData authData = userService.login(loginUser);
+            res.status(200);
+            return authData;
         });
     }
 
     private Object logout(Request req, Response res) {
-        return handleRequest(req, res, request -> {
-            String authToken = request.headers("Authorization");
+        return handleRequest(req, res, () -> {
+            String authToken = req.headers("Authorization");
             userService.logout(authToken);
-            return "";
+            res.status(200);
+            return Map.of();
         });
     }
 
     private Object createGame(Request req, Response res) {
-        return handleRequest(req, res, request -> {
-            String authToken = request.headers("Authorization");
-            GameData gameData = gson.fromJson(request.body(), GameData.class);
+        return handleRequest(req, res, () -> {
+            String authToken = req.headers("Authorization");
+            GameData gameData = gson.fromJson(req.body(), GameData.class);
             Integer createdGame = gameService.createGame(authToken, gameData);
+            res.status(200);
             return Map.of("gameID", createdGame);
         });
     }
 
     private Object listGames(Request req, Response res) {
-        return handleRequest(req, res, request -> {
-            String authToken = request.headers("Authorization");
-            Collection<GameData> games = gameService.listGames(authToken);
-            return Map.of("games", games);
+        return handleRequest(req, res, () -> {
+            String authToken = req.headers("Authorization");
+            Collection<GameData> gameData = gameService.listGames(authToken);
+            res.status(200);
+            return Map.of("games", gameData);
         });
     }
 
     private Object joinGame(Request req, Response res) {
-        return handleRequest(req, res, request -> {
-            String authToken = request.headers("Authorization");
-            GameData joinGameData = gson.fromJson(request.body(), GameData.class);
+        return handleRequest(req, res, () -> {
+            String authToken = req.headers("Authorization");
+            GameData joinGameData = gson.fromJson(req.body(), GameData.class);
             int gameId = joinGameData.gameID();
-            String playerColor = gson.fromJson(request.body(), Map.class).get("playerColor").toString();
+            String playerColor = gson.fromJson(req.body(), Map.class).get("playerColor").toString();
             gameService.joinGame(authToken, gameId, playerColor);
-            return "";
+            res.status(200);
+            return Map.of();
         });
     }
 
     private Object clear(Request req, Response res) {
-        return handleRequest(req, res, request -> {
+        return handleRequest(req, res, () -> {
             userService.clear();
             gameService.clear();
-            return "";
+            res.status(200);
+            return Map.of();
         });
     }
 
-    @FunctionalInterface
-    interface RequestHandler {
-        Object handle(Request req) throws Exception;
+    private Object handleRequest(Request req, Response res, RequestHandler handler) {
+        res.type("application/json");
+        try {
+            return gson.toJson(handler.handle());
+        } catch (BadRequestException | UnauthorizedException | TakenException e) {
+            res.status(e instanceof BadRequestException ? 400 : e instanceof UnauthorizedException ? 401 : 403);
+            return gson.toJson(Map.of("message", "Error: " + e.getMessage()));
+        } catch (DataAccessException e) {
+            res.status(500);
+            return gson.toJson(Map.of("message", "Internal server error: " + e.getMessage()));
+        } catch (Exception e) {
+            res.status(500);
+            return gson.toJson(Map.of("message", "An unexpected error occurred: " + e.getMessage()));
+        }
     }
 
     public void stop() {
         Spark.stop();
         Spark.awaitStop();
+    }
+
+    @FunctionalInterface
+    private interface RequestHandler {
+        Object handle() throws Exception;
     }
 }

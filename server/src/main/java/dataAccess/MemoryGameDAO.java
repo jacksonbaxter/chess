@@ -30,16 +30,16 @@ public class MemoryGameDAO implements GameDAO {
     }
 
     @Override
-    public void updateGame(GameData game) throws DataAccessException {
-        if (game == null || !games.containsKey(game.gameID())) {
-            throw new DataAccessException("Cannot update non-existing game with ID: " + game.gameID());
+    public void updateGame(GameData gameData) throws DataAccessException {
+        if (gameData == null || !games.containsKey(gameData.gameID())) {
+            throw new DataAccessException("Cannot update non-existing game with ID: " + gameData.gameID());
         }
-        games.put(game.gameID(), game);
+        games.put(gameData.gameID(), gameData);
     }
 
     @Override
     public Collection<GameData> listGames() {
-        return new ArrayList<>(games.values());
+        return games.values();
     }
 
     @Override

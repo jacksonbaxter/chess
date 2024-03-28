@@ -39,6 +39,8 @@ public class UserService {
             throw new UnauthorizedException("Invalid username or password.");
         }
 
+
+
         return authDAO.createAuth(user);
     }
 
