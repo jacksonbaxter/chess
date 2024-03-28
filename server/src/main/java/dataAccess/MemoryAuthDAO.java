@@ -8,8 +8,8 @@ import dataAccess.exceptions.DataAccessException;
 import model.UserData;
 
 public class MemoryAuthDAO implements AuthDAO {
-    private Map<String, AuthData> tokens = new HashMap<>();
-    private SecureRandom random = new SecureRandom();
+    private Map<String, AuthData> stringAuthDataHashMap = new HashMap<>();
+    private SecureRandom secureRandom = new SecureRandom();
 
     @Override
     public AuthData createAuth(UserData user) throws DataAccessException {
@@ -18,31 +18,31 @@ public class MemoryAuthDAO implements AuthDAO {
         }
         String authToken = generateAuthToken();
         AuthData newAuth = new AuthData(authToken, user.username());
-        tokens.put(authToken, newAuth);
+        stringAuthDataHashMap.put(authToken, newAuth);
         return newAuth;
     }
 
     @Override
     public AuthData getAuth(String authToken) {
-        return tokens.get(authToken);
+        return stringAuthDataHashMap.get(authToken);
     }
 
     @Override
     public void deleteAuth(String authToken) throws DataAccessException {
-        if (authToken == null || !tokens.containsKey(authToken)) {
+        if (authToken == null || !stringAuthDataHashMap.containsKey(authToken)) {
             throw new DataAccessException("Auth token not found or invalid.");
         }
-        tokens.remove(authToken);
+        stringAuthDataHashMap.remove(authToken);
     }
 
     @Override
     public void clear() {
-        tokens.clear();
+        stringAuthDataHashMap.clear();
     }
 
     private String generateAuthToken() {
         byte[] randomBytes = new byte[24]; // 192 bits
-        random.nextBytes(randomBytes);
+        secureRandom.nextBytes(randomBytes);
         return bytesToHex(randomBytes);
     }
 

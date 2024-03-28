@@ -1,37 +1,34 @@
 package dataAccess;
 
-import dataAccess.exceptions.DataAccessException;
 import model.UserData;
-
 import java.util.HashMap;
+import java.util.Map;
+import dataAccess.exceptions.DataAccessException;
 
 public class MemoryUserDAO implements UserDAO {
-    private static final HashMap<String, UserData> userMap = new HashMap<>();
+    private final Map<String, UserData> stringUserDataHashMap = new HashMap<>();
 
     @Override
-    public void createUser(UserData userData) throws DataAccessException {
-        if (userData == null || userData.username() == null || userData.username().isEmpty()) {
-            throw new DataAccessException("UserData or username cannot be null or empty.");
+    public void createUser(UserData user) throws DataAccessException {
+        if (user == null || user.username() == null) {
+            throw new IllegalArgumentException("User and username must not be null.");
         }
-        if (userMap.putIfAbsent(userData.username(), userData) != null) {
-            throw new DataAccessException("User already exists.");
+        if (stringUserDataHashMap.containsKey(user.username())) {
+            throw new DataAccessException("User already exists with username: " + user.username());
         }
+        stringUserDataHashMap.put(user.username(), user);
     }
 
     @Override
-    public UserData getUser(String username) throws DataAccessException {
-        if (username == null || username.isEmpty()) {
-            throw new DataAccessException("Username cannot be null or empty.");
+    public UserData getUser(String username) {
+        if (username == null) {
+            throw new IllegalArgumentException("Username must not be null.");
         }
-        UserData userData = userMap.get(username);
-        if (userData == null) {
-            return null;
-        }
-        return userData;
+        return stringUserDataHashMap.get(username);
     }
 
     @Override
     public void clear() {
-        userMap.clear();
+        stringUserDataHashMap.clear();
     }
 }
